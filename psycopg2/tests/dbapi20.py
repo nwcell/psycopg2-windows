@@ -193,8 +193,8 @@ class DatabaseAPI20Test(unittest.TestCase):
             self.failUnless(issubclass(self.driver.Warning,Exception))
             self.failUnless(issubclass(self.driver.Error,Exception))
         else:
-            self.failUnless(issubclass(self.driver.Warning,StandardError))
-            self.failUnless(issubclass(self.driver.Error,StandardError))
+            self.failUnless(issubclass(self.driver.Warning,Exception))
+            self.failUnless(issubclass(self.driver.Error,Exception))
 
         self.failUnless(
             issubclass(self.driver.InterfaceError,self.driver.Error)

@@ -20,8 +20,8 @@ from decimal import Decimal
 from datetime import date, datetime
 from functools import wraps
 
-from testutils import unittest, skip_if_no_uuid, skip_before_postgres
-from testutils import ConnectingTestCase, decorate_all_tests
+from .testutils import unittest, skip_if_no_uuid, skip_before_postgres
+from .testutils import ConnectingTestCase, decorate_all_tests
 
 import psycopg2
 import psycopg2.extras
@@ -32,7 +32,7 @@ def filter_scs(conn, s):
     if conn.get_parameter_status("standard_conforming_strings") == 'off':
         return s
     else:
-        return s.replace(b("E'"), b("'"))
+        return s.replace(b"E'", b"'")
 
 class TypesExtrasTests(ConnectingTestCase):
     """Test that all type conversions are working."""
@@ -95,15 +95,15 @@ class TypesExtrasTests(ConnectingTestCase):
         a = psycopg2.extensions.adapt(i)
         a.prepare(self.conn)
         self.assertEqual(
-            filter_scs(self.conn, b("E'192.168.1.0/24'::inet")),
+            filter_scs(self.conn, b"E'192.168.1.0/24'::inet"),
             a.getquoted())
 
         # adapts ok with unicode too
-        i = Inet(u"192.168.1.0/24")
+        i = Inet("192.168.1.0/24")
         a = psycopg2.extensions.adapt(i)
         a.prepare(self.conn)
         self.assertEqual(
-            filter_scs(self.conn, b("E'192.168.1.0/24'::inet")),
+            filter_scs(self.conn, b"E'192.168.1.0/24'::inet"),
             a.getquoted())
 
     def test_adapt_fail(self):
@@ -112,7 +112,7 @@ class TypesExtrasTests(ConnectingTestCase):
             psycopg2.extensions.adapt, Foo(), psycopg2.extensions.ISQLQuote, None)
         try:
             psycopg2.extensions.adapt(Foo(), psycopg2.extensions.ISQLQuote, None)
-        except psycopg2.ProgrammingError, err:
+        except psycopg2.ProgrammingError as err:
             self.failUnless(str(err) == "can't adapt type 'Foo'")
 
 
@@ -136,23 +136,23 @@ class HstoreTestCase(ConnectingTestCase):
 
         o = {'a': '1', 'b': "'", 'c': None}
         if self.conn.encoding == 'UTF8':
-            o['d'] = u'\xe0'
+            o['d'] = '\xe0'
 
         a = HstoreAdapter(o)
         a.prepare(self.conn)
         q = a.getquoted()
 
-        self.assert_(q.startswith(b("((")), q)
-        ii = q[1:-1].split(b("||"))
+        self.assert_(q.startswith(b"(("), q)
+        ii = q[1:-1].split(b"||")
         ii.sort()
 
         self.assertEqual(len(ii), len(o))
-        self.assertEqual(ii[0], filter_scs(self.conn, b("(E'a' => E'1')")))
-        self.assertEqual(ii[1], filter_scs(self.conn, b("(E'b' => E'''')")))
-        self.assertEqual(ii[2], filter_scs(self.conn, b("(E'c' => NULL)")))
+        self.assertEqual(ii[0], filter_scs(self.conn, b"(E'a' => E'1')"))
+        self.assertEqual(ii[1], filter_scs(self.conn, b"(E'b' => E'''')"))
+        self.assertEqual(ii[2], filter_scs(self.conn, b"(E'c' => NULL)"))
         if 'd' in o:
-            encc = u'\xe0'.encode(psycopg2.extensions.encodings[self.conn.encoding])
-            self.assertEqual(ii[3], filter_scs(self.conn, b("(E'd' => E'") + encc + b("')")))
+            encc = '\xe0'.encode(psycopg2.extensions.encodings[self.conn.encoding])
+            self.assertEqual(ii[3], filter_scs(self.conn, b"(E'd' => E'" + encc + b"')"))
 
     def test_adapt_9(self):
         if self.conn.server_version < 90000:
@@ -162,30 +162,30 @@ class HstoreTestCase(ConnectingTestCase):
 
         o = {'a': '1', 'b': "'", 'c': None}
         if self.conn.encoding == 'UTF8':
-            o['d'] = u'\xe0'
+            o['d'] = '\xe0'
 
         a = HstoreAdapter(o)
         a.prepare(self.conn)
         q = a.getquoted()
 
-        m = re.match(b(r'hstore\(ARRAY\[([^\]]+)\], ARRAY\[([^\]]+)\]\)'), q)
+        m = re.match(br'hstore\(ARRAY\[([^\]]+)\], ARRAY\[([^\]]+)\]\)', q)
         self.assert_(m, repr(q))
 
-        kk = m.group(1).split(b(", "))
-        vv = m.group(2).split(b(", "))
-        ii = zip(kk, vv)
+        kk = m.group(1).split(b", ")
+        vv = m.group(2).split(b", ")
+        ii = list(zip(kk, vv))
         ii.sort()
 
         def f(*args):
             return tuple([filter_scs(self.conn, s) for s in args])
 
         self.assertEqual(len(ii), len(o))
-        self.assertEqual(ii[0], f(b("E'a'"), b("E'1'")))
-        self.assertEqual(ii[1], f(b("E'b'"), b("E''''")))
-        self.assertEqual(ii[2], f(b("E'c'"), b("NULL")))
+        self.assertEqual(ii[0], f(b"E'a'", b"E'1'"))
+        self.assertEqual(ii[1], f(b"E'b'", b"E''''"))
+        self.assertEqual(ii[2], f(b"E'c'", b"NULL"))
         if 'd' in o:
-            encc = u'\xe0'.encode(psycopg2.extensions.encodings[self.conn.encoding])
-            self.assertEqual(ii[3], f(b("E'd'"), b("E'") + encc + b("'")))
+            encc = '\xe0'.encode(psycopg2.extensions.encodings[self.conn.encoding])
+            self.assertEqual(ii[3], f(b"E'd'", b"E'" + encc + b"'"))
 
     def test_parse(self):
         from psycopg2.extras import HstoreAdapter
@@ -245,15 +245,15 @@ class HstoreTestCase(ConnectingTestCase):
     def test_register_unicode(self):
         from psycopg2.extras import register_hstore
 
-        register_hstore(self.conn, unicode=True)
+        register_hstore(self.conn, str=True)
         cur = self.conn.cursor()
         cur.execute("select null::hstore, ''::hstore, 'a => b'::hstore")
         t = cur.fetchone()
         self.assert_(t[0] is None)
         self.assertEqual(t[1], {})
-        self.assertEqual(t[2], {u'a': u'b'})
-        self.assert_(isinstance(t[2].keys()[0], unicode))
-        self.assert_(isinstance(t[2].values()[0], unicode))
+        self.assertEqual(t[2], {'a': 'b'})
+        self.assert_(isinstance(list(t[2].keys())[0], str))
+        self.assert_(isinstance(list(t[2].values())[0], str))
 
     @skip_if_no_hstore
     def test_register_globally(self):
@@ -296,41 +296,41 @@ class HstoreTestCase(ConnectingTestCase):
         ok({})
         ok({'a': 'b', 'c': None})
 
-        ab = map(chr, range(32, 128))
-        ok(dict(zip(ab, ab)))
+        ab = list(map(chr, list(range(32, 128))))
+        ok(dict(list(zip(ab, ab))))
         ok({''.join(ab): ''.join(ab)})
 
         self.conn.set_client_encoding('latin1')
         if sys.version_info[0] < 3:
-            ab = map(chr, range(32, 127) + range(160, 255))
+            ab = list(map(chr, list(range(32, 127)) + list(range(160, 255))))
         else:
-            ab = bytes(range(32, 127) + range(160, 255)).decode('latin1')
+            ab = bytes(list(range(32, 127)) + list(range(160, 255))).decode('latin1')
 
         ok({''.join(ab): ''.join(ab)})
-        ok(dict(zip(ab, ab)))
+        ok(dict(list(zip(ab, ab))))
 
     @skip_if_no_hstore
     def test_roundtrip_unicode(self):
         from psycopg2.extras import register_hstore
-        register_hstore(self.conn, unicode=True)
+        register_hstore(self.conn, str=True)
         cur = self.conn.cursor()
 
         def ok(d):
             cur.execute("select %s", (d,))
             d1 = cur.fetchone()[0]
             self.assertEqual(len(d), len(d1))
-            for k, v in d1.iteritems():
+            for k, v in d1.items():
                 self.assert_(k in d, k)
                 self.assertEqual(d[k], v)
-                self.assert_(isinstance(k, unicode))
-                self.assert_(v is None or isinstance(v, unicode))
+                self.assert_(isinstance(k, str))
+                self.assert_(v is None or isinstance(v, str))
 
         ok({})
-        ok({'a': 'b', 'c': None, 'd': u'\u20ac', u'\u2603': 'e'})
+        ok({'a': 'b', 'c': None, 'd': '\u20ac', '\u2603': 'e'})
 
-        ab = map(unichr, range(1, 1024))
-        ok({u''.join(ab): u''.join(ab)})
-        ok(dict(zip(ab, ab)))
+        ab = list(map(chr, list(range(1, 1024))))
+        ok({''.join(ab): ''.join(ab)})
+        ok(dict(list(zip(ab, ab))))
 
     @skip_if_no_hstore
     def test_oid(self):
@@ -362,18 +362,18 @@ class HstoreTestCase(ConnectingTestCase):
         ds.append({})
         ds.append({'a': 'b', 'c': None})
 
-        ab = map(chr, range(32, 128))
-        ds.append(dict(zip(ab, ab)))
+        ab = list(map(chr, list(range(32, 128))))
+        ds.append(dict(list(zip(ab, ab))))
         ds.append({''.join(ab): ''.join(ab)})
 
         self.conn.set_client_encoding('latin1')
         if sys.version_info[0] < 3:
-            ab = map(chr, range(32, 127) + range(160, 255))
+            ab = list(map(chr, list(range(32, 127)) + list(range(160, 255))))
         else:
-            ab = bytes(range(32, 127) + range(160, 255)).decode('latin1')
+            ab = bytes(list(range(32, 127)) + list(range(160, 255))).decode('latin1')
 
         ds.append({''.join(ab): ''.join(ab)})
-        ds.append(dict(zip(ab, ab)))
+        ds.append(dict(list(zip(ab, ab))))
 
         cur = self.conn.cursor()
         cur.execute("select %s", (ds,))
@@ -451,7 +451,7 @@ class AdaptTypeTestCase(ConnectingTestCase):
     def test_none_in_record(self):
         curs = self.conn.cursor()
         s = curs.mogrify("SELECT %s;", [(42, None)])
-        self.assertEqual(b("SELECT (42, NULL);"), s)
+        self.assertEqual(b"SELECT (42, NULL);", s)
         curs.execute("SELECT %s;", [(42, None)])
         d = curs.fetchone()[0]
         self.assertEqual("(42,)", d)
@@ -472,7 +472,7 @@ class AdaptTypeTestCase(ConnectingTestCase):
             self.assertEqual(ext.adapt(None).getquoted(), "NOPE!")
 
             s = curs.mogrify("SELECT %s;", (None,))
-            self.assertEqual(b("SELECT NULL;"), s)
+            self.assertEqual(b"SELECT NULL;", s)
 
         finally:
             ext.register_adapter(type(None), orig_adapter)
@@ -499,12 +499,12 @@ class AdaptTypeTestCase(ConnectingTestCase):
            '@,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,[,"\\\\",],'
            '^,_,`,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,{,|,},'
            '~,\x7f)',
-           map(chr, range(1, 128)))
+           list(map(chr, list(range(1, 128)))))
         ok('(,"\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f'
            '\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !'
            '""#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\\\]'
            '^_`abcdefghijklmnopqrstuvwxyz{|}~\x7f")',
-           [None, ''.join(map(chr, range(1, 128)))])
+           [None, ''.join(map(chr, list(range(1, 128))))])
 
     @skip_if_no_composite
     def test_cast_composite(self):
@@ -772,7 +772,7 @@ class AdaptTypeTestCase(ConnectingTestCase):
 
         class DictComposite(CompositeCaster):
             def make(self, values):
-                return dict(zip(self.attnames, values))
+                return dict(list(zip(self.attnames, values)))
 
         t = register_composite('type_isd', self.conn, factory=DictComposite)
 
@@ -868,7 +868,7 @@ class JsonTestCase(ConnectingTestCase):
         from psycopg2.extras import json, Json
 
         objs = [None, "te'xt", 123, 123.45,
-            u'\xe0\u20ac', ['a', 100], {'a': 100} ]
+            '\xe0\u20ac', ['a', 100], {'a': 100} ]
 
         curs = self.conn.cursor()
         for obj in enumerate(objs):
@@ -889,7 +889,7 @@ class JsonTestCase(ConnectingTestCase):
         obj = Decimal('123.45')
         dumps = lambda obj: json.dumps(obj, cls=DecimalEncoder)
         self.assertEqual(curs.mogrify("%s", (Json(obj, dumps=dumps),)),
-            b("'123.45'"))
+            b"'123.45'")
 
     @skip_if_no_json_module
     def test_adapt_subclass(self):
@@ -908,7 +908,7 @@ class JsonTestCase(ConnectingTestCase):
         curs = self.conn.cursor()
         obj = Decimal('123.45')
         self.assertEqual(curs.mogrify("%s", (MyJson(obj),)),
-            b("'123.45'"))
+            b"'123.45'")
 
     @skip_if_no_json_module
     def test_register_on_dict(self):
@@ -919,7 +919,7 @@ class JsonTestCase(ConnectingTestCase):
             curs = self.conn.cursor()
             obj = {'a': 123}
             self.assertEqual(curs.mogrify("%s", (obj,)),
-                b("""'{"a": 123}'"""))
+                b"""'{"a": 123}'""")
         finally:
            del psycopg2.extensions.adapters[dict, psycopg2.extensions.ISQLQuote]
 
@@ -1412,7 +1412,7 @@ class RangeCasterTestCase(ConnectingTestCase):
         from psycopg2.tz import FixedOffsetTimezone
         cur = self.conn.cursor()
 
-        d1 = date(2012, 01, 01)
+        d1 = date(2012, 0o1, 0o1)
         d2 = date(2012, 12, 31)
         r = DateRange(d1, d2)
         cur.execute("select %s", (r,))
@@ -1482,8 +1482,8 @@ class RangeCasterTestCase(ConnectingTestCase):
         bounds = [ '[)', '(]', '()', '[]' ]
         ranges = [ TextRange(low, up, bounds[i % 4])
             for i, (low, up) in enumerate(zip(
-                [None] + map(chr, range(1, 128)),
-                map(chr, range(1,128)) + [None],
+                [None] + list(map(chr, list(range(1, 128)))),
+                list(map(chr, list(range(1,128)))) + [None],
                 ))]
         ranges.append(TextRange())
         ranges.append(TextRange(empty=True))
