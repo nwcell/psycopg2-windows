@@ -23,7 +23,7 @@
 # License for more details.
 
 import sys
-from testutils import unittest, ConnectingTestCase
+from .testutils import unittest, ConnectingTestCase
 
 import psycopg2
 import psycopg2.extensions
@@ -51,7 +51,7 @@ class QuotingTestCase(ConnectingTestCase):
         data = """some data with \t chars
         to escape into, 'quotes' and \\ a backslash too.
         """
-        data += "".join(map(chr, range(1,127)))
+        data += "".join(map(chr, list(range(1,127))))
 
         curs = self.conn.cursor()
         curs.execute("SELECT %s;", (data,))
@@ -61,13 +61,13 @@ class QuotingTestCase(ConnectingTestCase):
         self.assert_(not self.conn.notices)
 
     def test_binary(self):
-        data = b("""some data with \000\013 binary
+        data = b"""some data with \000\013 binary
         stuff into, 'quotes' and \\ a backslash too.
-        """)
+        """
         if sys.version_info[0] < 3:
-            data += "".join(map(chr, range(256)))
+            data += "".join(map(chr, list(range(256))))
         else:
-            data += bytes(range(256))
+            data += bytes(list(range(256)))
 
         curs = self.conn.cursor()
         curs.execute("SELECT %s::bytea;", (psycopg2.Binary(data),))
@@ -76,7 +76,7 @@ class QuotingTestCase(ConnectingTestCase):
         else:
             res = curs.fetchone()[0].tobytes()
 
-        if res[0] in (b('x'), ord(b('x'))) and self.conn.server_version >= 90000:
+        if res[0] in (b'x', ord(b'x')) and self.conn.server_version >= 90000:
             return self.skipTest(
                 "bytea broken with server >= 9.0, libpq < 9")
 
@@ -92,10 +92,10 @@ class QuotingTestCase(ConnectingTestCase):
                 "Unicode test skipped since server encoding is %s"
                     % server_encoding)
 
-        data = u"""some data with \t chars
+        data = """some data with \t chars
         to escape into, 'quotes', \u20ac euro sign and \\ a backslash too.
         """
-        data += u"".join(map(unichr, [ u for u in range(1,65536)
+        data += "".join(map(chr, [ u for u in range(1,65536)
             if not 0xD800 <= u <= 0xDFFF ]))    # surrogate area
         self.conn.set_client_encoding('UNICODE')
 
@@ -110,9 +110,9 @@ class QuotingTestCase(ConnectingTestCase):
         self.conn.set_client_encoding('LATIN1')
         curs = self.conn.cursor()
         if sys.version_info[0] < 3:
-            data = ''.join(map(chr, range(32, 127) + range(160, 256)))
+            data = ''.join(map(chr, list(range(32, 127)) + list(range(160, 256))))
         else:
-            data = bytes(range(32, 127) + range(160, 256)).decode('latin1')
+            data = bytes(list(range(32, 127)) + list(range(160, 256))).decode('latin1')
 
         # as string
         curs.execute("SELECT %s::text;", (data,))
@@ -134,9 +134,9 @@ class QuotingTestCase(ConnectingTestCase):
         self.conn.set_client_encoding('KOI8')
         curs = self.conn.cursor()
         if sys.version_info[0] < 3:
-            data = ''.join(map(chr, range(32, 127) + range(128, 256)))
+            data = ''.join(map(chr, list(range(32, 127)) + list(range(128, 256))))
         else:
-            data = bytes(range(32, 127) + range(128, 256)).decode('koi8_r')
+            data = bytes(list(range(32, 127)) + list(range(128, 256))).decode('koi8_r')
 
         # as string
         curs.execute("SELECT %s::text;", (data,))

@@ -23,12 +23,12 @@
 # License for more details.
 
 
-from __future__ import with_statement
+
 
 import psycopg2
 import psycopg2.extensions as ext
 
-from testutils import unittest, ConnectingTestCase
+from .testutils import unittest, ConnectingTestCase
 
 class WithTestCase(ConnectingTestCase):
     def setUp(self):

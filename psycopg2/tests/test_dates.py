@@ -25,7 +25,7 @@
 import math
 import psycopg2
 from psycopg2.tz import FixedOffsetTimezone, ZERO
-from testutils import unittest, ConnectingTestCase
+from .testutils import unittest, ConnectingTestCase
 
 class CommonDatetimeTestsMixin:
 

@@ -117,7 +117,7 @@ class Range(object):
 
         return True
 
-    def __nonzero__(self):
+    def __bool__(self):
         return self._bounds is not None
 
     def __eq__(self, other):
@@ -206,7 +206,7 @@ class RangeAdapter(object):
                 a.prepare(self._conn)
             lower = a.getquoted()
         else:
-            lower = b('NULL')
+            lower = b'NULL'
 
         if r.upper is not None:
             a = adapt(r.upper)
@@ -214,9 +214,9 @@ class RangeAdapter(object):
                 a.prepare(self._conn)
             upper = a.getquoted()
         else:
-            upper = b('NULL')
+            upper = b'NULL'
 
-        return b(self.name + '(') + lower + b(', ') + upper \
+        return b(self.name + '(') + lower + b', ' + upper \
                 + b(", '%s')" % r._bounds)
 
 
@@ -248,7 +248,7 @@ class RangeCaster(object):
         # an implementation detail and is not documented. It is currently used
         # for the numeric ranges.
         self.adapter = None
-        if isinstance(pgrange, basestring):
+        if isinstance(pgrange, str):
             self.adapter = type(pgrange, (RangeAdapter,), {})
             self.adapter.name = pgrange
         else:
@@ -264,7 +264,7 @@ class RangeCaster(object):
 
         self.range = None
         try:
-            if isinstance(pyrange, basestring):
+            if isinstance(pyrange, str):
                 self.range = type(pyrange, (Range,), {})
             if issubclass(pyrange, Range) and pyrange is not Range:
                 self.range = pyrange
@@ -417,7 +417,7 @@ class NumberRangeAdapter(RangeAdapter):
     def getquoted(self):
         r = self.adapted
         if r.isempty:
-            return b("'empty'")
+            return b"'empty'"
 
         if not r.lower_inf:
             # not exactly: we are relying that none of these object is really
