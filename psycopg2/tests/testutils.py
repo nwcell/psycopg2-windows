@@ -27,7 +27,7 @@
 import os
 import sys
 from functools import wraps
-from testconfig import dsn
+from .testconfig import dsn
 
 try:
     import unittest2
@@ -96,7 +96,7 @@ class ConnectingTestCase(unittest.TestCase):
     def connect(self, **kwargs):
         try:
             self._conns
-        except AttributeError, e:
+        except AttributeError as e:
             raise AttributeError(
                 "%s (did you remember calling ConnectingTestCase.setUp()?)"
                 % e)
@@ -269,7 +269,7 @@ def skip_if_no_superuser(f):
         from psycopg2 import ProgrammingError
         try:
             return f(self)
-        except ProgrammingError, e:
+        except ProgrammingError as e:
             import psycopg2.errorcodes
             if e.pgcode == psycopg2.errorcodes.INSUFFICIENT_PRIVILEGE:
                 self.skipTest("skipped because not superuser")
@@ -282,7 +282,7 @@ def skip_if_green(reason):
     def skip_if_green_(f):
         @wraps(f)
         def skip_if_green__(self):
-            from testconfig import green
+            from .testconfig import green
             if green:
                 return self.skipTest(reason)
             else:

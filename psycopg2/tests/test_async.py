@@ -23,16 +23,16 @@
 # FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 # License for more details.
 
-from testutils import unittest, skip_before_postgres
+from .testutils import unittest, skip_before_postgres
 
 import psycopg2
 from psycopg2 import extensions
 
 import time
 import select
-import StringIO
+import io
 
-from testutils import ConnectingTestCase
+from .testutils import ConnectingTestCase
 
 class PollableStub(object):
     """A 'pollable' wrapper allowing analysis of the `poll()` calls."""
@@ -250,7 +250,7 @@ class AsyncTests(ConnectingTestCase):
         # copy should fail
         self.assertRaises(psycopg2.ProgrammingError,
                           cur.copy_from,
-                          StringIO.StringIO("1\n3\n5\n\\.\n"), "table1")
+                          io.StringIO("1\n3\n5\n\\.\n"), "table1")
 
     def test_lobject_while_async(self):
         # large objects should be prohibited
@@ -453,7 +453,7 @@ class AsyncTests(ConnectingTestCase):
         try:
             cnn = psycopg2.connect('dbname=thisdatabasedoesntexist', async=True)
             self.wait(cnn)
-        except psycopg2.Error, e:
+        except psycopg2.Error as e:
             self.assertNotEqual(str(e), "asynchronous connection failed",
                 "connection error reason lost")
         else:

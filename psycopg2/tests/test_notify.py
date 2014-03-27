@@ -22,12 +22,12 @@
 # FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 # License for more details.
 
-from testutils import unittest
+from .testutils import unittest
 
 import psycopg2
 from psycopg2 import extensions
-from testutils import ConnectingTestCase, script_to_py3
-from testconfig import dsn
+from .testutils import ConnectingTestCase, script_to_py3
+from .testconfig import dsn
 
 import sys
 import time

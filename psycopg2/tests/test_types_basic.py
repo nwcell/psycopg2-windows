@@ -26,8 +26,8 @@ import decimal
 
 import sys
 from functools import wraps
-import testutils
-from testutils import unittest, ConnectingTestCase, decorate_all_tests
+from . import testutils
+from .testutils import unittest, ConnectingTestCase, decorate_all_tests
 
 import psycopg2
 from psycopg2.extensions import b
@@ -47,15 +47,15 @@ class TypesBasicTests(ConnectingTestCase):
                         "wrong quoting: " + s)
 
     def testUnicode(self):
-        s = u"Quote'this\\! ''ok?''"
+        s = "Quote'this\\! ''ok?''"
         self.failUnless(self.execute("SELECT %s AS foo", (s,)) == s,
                         "wrong unicode quoting: " + s)
 
     def testNumber(self):
         s = self.execute("SELECT %s AS foo", (1971,))
         self.failUnless(s == 1971, "wrong integer quoting: " + str(s))
-        s = self.execute("SELECT %s AS foo", (1971L,))
-        self.failUnless(s == 1971L, "wrong integer quoting: " + str(s))
+        s = self.execute("SELECT %s AS foo", (1971,))
+        self.failUnless(s == 1971, "wrong integer quoting: " + str(s))
 
     def testBoolean(self):
         x = self.execute("SELECT %s as foo", (False,))
@@ -108,7 +108,7 @@ class TypesBasicTests(ConnectingTestCase):
             buf = self.execute("SELECT %s::bytea AS foo", (b,))
             self.assertEqual(s, str(buf))
         else:
-            s = bytes(range(256))
+            s = bytes(list(range(256)))
             b = psycopg2.Binary(s)
             buf = self.execute("SELECT %s::bytea AS foo", (b,))
             self.assertEqual(s, buf.tobytes())
@@ -136,7 +136,7 @@ class TypesBasicTests(ConnectingTestCase):
             buf2 = self.execute("SELECT %s::bytea AS foo", (buf,))
             self.assertEqual(s, str(buf2))
         else:
-            s = bytes(range(256))
+            s = bytes(list(range(256)))
             buf = self.execute("SELECT %s::bytea AS foo", (psycopg2.Binary(s),))
             buf2 = self.execute("SELECT %s::bytea AS foo", (buf,))
             self.assertEqual(s, buf2.tobytes())
@@ -194,7 +194,7 @@ class TypesBasicTests(ConnectingTestCase):
 
     @testutils.skip_from_python(3)
     def testTypeRoundtripBuffer(self):
-        o1 = buffer("".join(map(chr, range(256))))
+        o1 = buffer("".join(map(chr, list(range(256)))))
         o2 = self.execute("select %s;", (o1,))
         self.assertEqual(type(o1), type(o2))
 
@@ -206,7 +206,7 @@ class TypesBasicTests(ConnectingTestCase):
 
     @testutils.skip_from_python(3)
     def testTypeRoundtripBufferArray(self):
-        o1 = buffer("".join(map(chr, range(256))))
+        o1 = buffer("".join(map(chr, list(range(256)))))
         o1 = [o1]
         o2 = self.execute("select %s;", (o1,))
         self.assertEqual(type(o1[0]), type(o2[0]))
@@ -214,7 +214,7 @@ class TypesBasicTests(ConnectingTestCase):
 
     @testutils.skip_before_python(3)
     def testTypeRoundtripBytes(self):
-        o1 = bytes(range(256))
+        o1 = bytes(list(range(256)))
         o2 = self.execute("select %s;", (o1,))
         self.assertEqual(memoryview, type(o2))
 
@@ -225,14 +225,14 @@ class TypesBasicTests(ConnectingTestCase):
 
     @testutils.skip_before_python(3)
     def testTypeRoundtripBytesArray(self):
-        o1 = bytes(range(256))
+        o1 = bytes(list(range(256)))
         o1 = [o1]
         o2 = self.execute("select %s;", (o1,))
         self.assertEqual(memoryview, type(o2[0]))
 
     @testutils.skip_before_python(2, 6)
     def testAdaptBytearray(self):
-        o1 = bytearray(range(256))
+        o1 = bytearray(list(range(256)))
         o2 = self.execute("select %s;", (o1,))
 
         if sys.version_info[0] < 3:
@@ -256,7 +256,7 @@ class TypesBasicTests(ConnectingTestCase):
 
     @testutils.skip_before_python(2, 7)
     def testAdaptMemoryview(self):
-        o1 = memoryview(bytearray(range(256)))
+        o1 = memoryview(bytearray(list(range(256))))
         o2 = self.execute("select %s;", (o1,))
         if sys.version_info[0] < 3:
             self.assertEqual(buffer, type(o2))
@@ -274,9 +274,9 @@ class TypesBasicTests(ConnectingTestCase):
     def testByteaHexCheckFalsePositive(self):
         # the check \x -> x to detect bad bytea decode
         # may be fooled if the first char is really an 'x'
-        o1 = psycopg2.Binary(b('x'))
+        o1 = psycopg2.Binary(b'x')
         o2 = self.execute("SELECT %s::bytea AS foo", (o1,))
-        self.assertEqual(b('x'), o2[0])
+        self.assertEqual(b'x', o2[0])
 
     def testNegNumber(self):
         d1 = self.execute("select -%s;", (decimal.Decimal('-1.0'),))
@@ -285,7 +285,7 @@ class TypesBasicTests(ConnectingTestCase):
         self.assertEqual(1, f1)
         i1 = self.execute("select -%s;", (-1,))
         self.assertEqual(1, i1)
-        l1 = self.execute("select -%s;", (-1L,))
+        l1 = self.execute("select -%s;", (-1,))
         self.assertEqual(1, l1)
 
     def testGenericArray(self):
@@ -327,7 +327,7 @@ class AdaptSubclassTest(unittest.TestCase):
         register_adapter(A, lambda a: AsIs("a"))
         register_adapter(B, lambda b: AsIs("b"))
         try:
-            self.assertEqual(b('b'), adapt(C()).getquoted())
+            self.assertEqual(b'b', adapt(C()).getquoted())
         finally:
            del psycopg2.extensions.adapters[A, psycopg2.extensions.ISQLQuote]
            del psycopg2.extensions.adapters[B, psycopg2.extensions.ISQLQuote]
@@ -355,7 +355,7 @@ class AdaptSubclassTest(unittest.TestCase):
 
         register_adapter(A, lambda a: AsIs("a"))
         try:
-            self.assertEqual(b("a"), adapt(B()).getquoted())
+            self.assertEqual(b"a", adapt(B()).getquoted())
         finally:
            del psycopg2.extensions.adapters[A, psycopg2.extensions.ISQLQuote]
 
@@ -365,7 +365,7 @@ class ByteaParserTest(unittest.TestCase):
     def setUp(self):
         try:
             self._cast = self._import_cast()
-        except Exception, e:
+        except Exception as e:
             self._cast = None
             self._exc = e
 
@@ -400,13 +400,13 @@ class ByteaParserTest(unittest.TestCase):
         self.assertEqual(rv, None)
 
     def test_blank(self):
-        rv = self.cast(b(''))
-        self.assertEqual(rv, b(''))
+        rv = self.cast(b'')
+        self.assertEqual(rv, b'')
 
     def test_blank_hex(self):
         # Reported as problematic in ticket #48
-        rv = self.cast(b('\\x'))
-        self.assertEqual(rv, b(''))
+        rv = self.cast(b'\\x')
+        self.assertEqual(rv, b'')
 
     def test_full_hex(self, upper=False):
         buf = ''.join(("%02x" % i) for i in range(256))
@@ -414,9 +414,9 @@ class ByteaParserTest(unittest.TestCase):
         buf = '\\x' + buf
         rv = self.cast(b(buf))
         if sys.version_info[0] < 3:
-            self.assertEqual(rv, ''.join(map(chr, range(256))))
+            self.assertEqual(rv, ''.join(map(chr, list(range(256)))))
         else:
-            self.assertEqual(rv, bytes(range(256)))
+            self.assertEqual(rv, bytes(list(range(256))))
 
     def test_full_hex_upper(self):
         return self.test_full_hex(upper=True)
@@ -425,9 +425,9 @@ class ByteaParserTest(unittest.TestCase):
         buf = ''.join(("\\%03o" % i) for i in range(256))
         rv = self.cast(b(buf))
         if sys.version_info[0] < 3:
-            self.assertEqual(rv, ''.join(map(chr, range(256))))
+            self.assertEqual(rv, ''.join(map(chr, list(range(256)))))
         else:
-            self.assertEqual(rv, bytes(range(256)))
+            self.assertEqual(rv, bytes(list(range(256))))
 
     def test_escaped_mixed(self):
         import string
@@ -437,10 +437,10 @@ class ByteaParserTest(unittest.TestCase):
         buf += '\\\\'
         rv = self.cast(b(buf))
         if sys.version_info[0] < 3:
-            tgt = ''.join(map(chr, range(32))) \
+            tgt = ''.join(map(chr, list(range(32)))) \
                 + string.ascii_letters * 2 + '\\'
         else:
-            tgt = bytes(range(32)) + \
+            tgt = bytes(list(range(32))) + \
                 (string.ascii_letters * 2 + '\\').encode('ascii')
 
         self.assertEqual(rv, tgt)
