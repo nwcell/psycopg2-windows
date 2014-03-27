@@ -27,7 +27,7 @@ import psycopg2
 import psycopg2.extensions
 import psycopg2.extras
 
-from testutils import ConnectingTestCase
+from .testutils import ConnectingTestCase
 
 class ConnectionStub(object):
     """A `connection` wrapper allowing analysis of the `poll()` calls."""

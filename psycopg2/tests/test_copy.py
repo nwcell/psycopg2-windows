@@ -24,14 +24,14 @@
 
 import sys
 import string
-from testutils import unittest, ConnectingTestCase, decorate_all_tests
-from testutils import skip_if_no_iobase
-from cStringIO import StringIO
-from itertools import cycle, izip
+from .testutils import unittest, ConnectingTestCase, decorate_all_tests
+from .testutils import skip_if_no_iobase
+from io import StringIO
+from itertools import cycle
 
 import psycopg2
 import psycopg2.extensions
-from testutils import skip_copy_if_green
+from .testutils import skip_copy_if_green
 
 if sys.version_info[0] < 3:
     _base = object
@@ -91,7 +91,7 @@ class CopyTests(ConnectingTestCase):
     def test_copy_from_cols(self):
         curs = self.conn.cursor()
         f = StringIO()
-        for i in xrange(10):
+        for i in range(10):
             f.write("%s\n" % (i,))
 
         f.seek(0)
@@ -103,7 +103,7 @@ class CopyTests(ConnectingTestCase):
     def test_copy_from_cols_err(self):
         curs = self.conn.cursor()
         f = StringIO()
-        for i in xrange(10):
+        for i in range(10):
             f.write("%s\n" % (i,))
 
         f.seek(0)
@@ -128,11 +128,11 @@ class CopyTests(ConnectingTestCase):
         self._create_temp_table()  # the above call closed the xn
 
         if sys.version_info[0] < 3:
-            abin = ''.join(map(chr, range(32, 127) + range(160, 256)))
+            abin = ''.join(map(chr, list(range(32, 127)) + list(range(160, 256))))
             about = abin.decode('latin1').replace('\\', '\\\\')
 
         else:
-            abin = bytes(range(32, 127) + range(160, 256)).decode('latin1')
+            abin = bytes(list(range(32, 127)) + list(range(160, 256))).decode('latin1')
             about = abin.replace('\\', '\\\\')
 
         curs = self.conn.cursor()
@@ -151,10 +151,10 @@ class CopyTests(ConnectingTestCase):
         self._create_temp_table()  # the above call closed the xn
 
         if sys.version_info[0] < 3:
-            abin = ''.join(map(chr, range(32, 127) + range(160, 255)))
+            abin = ''.join(map(chr, list(range(32, 127)) + list(range(160, 255))))
             about = abin.replace('\\', '\\\\')
         else:
-            abin = bytes(range(32, 127) + range(160, 255)).decode('latin1')
+            abin = bytes(list(range(32, 127)) + list(range(160, 255))).decode('latin1')
             about = abin.replace('\\', '\\\\').encode('latin1')
 
         curs = self.conn.cursor()
@@ -173,12 +173,12 @@ class CopyTests(ConnectingTestCase):
         self._create_temp_table()  # the above call closed the xn
 
         if sys.version_info[0] < 3:
-            abin = ''.join(map(chr, range(32, 127) + range(160, 256)))
+            abin = ''.join(map(chr, list(range(32, 127)) + list(range(160, 256))))
             abin = abin.decode('latin1')
             about = abin.replace('\\', '\\\\')
 
         else:
-            abin = bytes(range(32, 127) + range(160, 256)).decode('latin1')
+            abin = bytes(list(range(32, 127)) + list(range(160, 256))).decode('latin1')
             about = abin.replace('\\', '\\\\')
 
         import io
@@ -216,7 +216,7 @@ class CopyTests(ConnectingTestCase):
 
     def _copy_from(self, curs, nrecs, srec, copykw):
         f = StringIO()
-        for i, c in izip(xrange(nrecs), cycle(string.ascii_letters)):
+        for i, c in zip(range(nrecs), cycle(string.ascii_letters)):
             l = c * srec
             f.write("%s\t%s\n" % (i,l))
 

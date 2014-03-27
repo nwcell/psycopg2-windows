@@ -31,10 +31,10 @@ import psycopg2
 import psycopg2.errorcodes
 import psycopg2.extensions
 
-from testutils import unittest, decorate_all_tests, skip_if_no_superuser
-from testutils import skip_before_postgres, skip_after_postgres
-from testutils import ConnectingTestCase, skip_if_tpc_disabled
-from testconfig import dsn, dbname
+from .testutils import unittest, decorate_all_tests, skip_if_no_superuser
+from .testutils import skip_before_postgres, skip_after_postgres
+from .testutils import ConnectingTestCase, skip_if_tpc_disabled
+from .testconfig import dsn, dbname
 
 
 class ConnectionTests(ConnectingTestCase):
@@ -70,10 +70,10 @@ class ConnectionTests(ConnectingTestCase):
         cur = conn.cursor()
         try:
             cur.execute("select pg_terminate_backend(pg_backend_pid())")
-        except psycopg2.OperationalError, e:
+        except psycopg2.OperationalError as e:
             if e.pgcode != psycopg2.errorcodes.ADMIN_SHUTDOWN:
                 raise
-        except psycopg2.DatabaseError, e:
+        except psycopg2.DatabaseError as e:
             # curiously when disconnected in green mode we get a DatabaseError
             # without pgcode.
             if e.pgcode is not None:
@@ -170,7 +170,7 @@ class ConnectionTests(ConnectingTestCase):
         cur = self.conn.cursor()
         psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, cur)
         cur.execute("select 'foo'::text;")
-        self.assertEqual(cur.fetchone()[0], u'foo')
+        self.assertEqual(cur.fetchone()[0], 'foo')
 
     def test_connect_nonnormal_envvar(self):
         # We must perform encoding normalization at connection time
@@ -757,7 +757,7 @@ class ConnectionTwoPhaseTests(ConnectingTestCase):
 
     def test_xid_unicode(self):
         cnn = self.connect()
-        x1 = cnn.xid(10, u'uni', u'code')
+        x1 = cnn.xid(10, 'uni', 'code')
         cnn.tpc_begin(x1)
         cnn.tpc_prepare()
         cnn.reset()
@@ -773,7 +773,7 @@ class ConnectionTwoPhaseTests(ConnectingTestCase):
         # Let's just check uniconde is accepted as type.
         cnn = self.connect()
         cnn.set_client_encoding('utf8')
-        cnn.tpc_begin(u"transaction-id")
+        cnn.tpc_begin("transaction-id")
         cnn.tpc_prepare()
         cnn.reset()
 
