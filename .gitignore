@@ -1,4 +1,5 @@
 ###SublimeText###
+*.pyc
 
 # SublimeText project files
 *.sublime-workspace
