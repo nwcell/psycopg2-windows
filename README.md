@@ -21,40 +21,40 @@ Depending on your environment, you'll want to use the appropriate script.  All d
 #### Windows 32 bit
 ###### Python 2.5
 ```
-pip install -e git+git@github.com:nwcell/psycopg2-windows.git@win32-py25#egg=psycopg2
+pip install git+https://github.com/nwcell/psycopg2-windows.git@win32-py25#egg=psycopg2
 ```
 ###### Python 2.6
 ```
-pip install -e git+git@github.com:nwcell/psycopg2-windows.git@win32-py26#egg=psycopg2
+pip install git+https://github.com/nwcell/psycopg2-windows.git@win32-py26#egg=psycopg2
 ```
 ###### Python 2.7
 ```
-pip install -e git+git@github.com:nwcell/psycopg2-windows.git@win32-py27#egg=psycopg2
+pip install git+https://github.com/nwcell/psycopg2-windows.git@win32-py27#egg=psycopg2
 ```
 ###### Python 3.2
 ```
-pip install -e git+git@github.com:nwcell/psycopg2-windows.git@win32-py32#egg=psycopg2
+pip install git+https://github.com/nwcell/psycopg2-windows.git@win32-py32#egg=psycopg2
 ```
 ###### Python 3.3
 ```
-pip install -e git+git@github.com:nwcell/psycopg2-windows.git@win32-py33#egg=psycopg2
+pip install git+https://github.com/nwcell/psycopg2-windows.git@win32-py33#egg=psycopg2
 ```
 #### Windows 64 bit
 ###### Python 2.6
 ```
-pip install -e git+git@github.com:nwcell/psycopg2-windows.git@win64-py26#egg=psycopg2
+pip install git+https://github.com/nwcell/psycopg2-windows.git@win64-py26#egg=psycopg2
 ```
 ###### Python 2.7
 ```
-pip install -e git+git@github.com:nwcell/psycopg2-windows.git@win64-py27#egg=psycopg2
+pip install git+https://github.com/nwcell/psycopg2-windows.git@win64-py27#egg=psycopg2
 ```
 ###### Python 3.2
 ```
-pip install -e git+git@github.com:nwcell/psycopg2-windows.git@win64-py32#egg=psycopg2
+pip install git+https://github.com/nwcell/psycopg2-windows.git@win64-py32#egg=psycopg2
 ```
 ###### Python 3.3
 ```
-pip install -e git+git@github.com:nwcell/psycopg2-windows.git@win64-py33#egg=psycopg2
+pip install git+https://github.com/nwcell/psycopg2-windows.git@win64-py33#egg=psycopg2
 ```
 
 Tests
