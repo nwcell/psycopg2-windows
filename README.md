@@ -16,7 +16,7 @@ Every time I need to set up psycopg2 on windows, I wind up wanting to shoot some
 
 Installation Scripts
 ----
-Depending on your environment, you'll want to use the appropriate script.  All downloads are using a **version 2.5.2 of psycopg2**.  Since psycopg2 is for PostgreSQL, you'll obviousely want to have that installed first.
+Depending on your environment, you'll want to use the appropriate script.  All branches are using **version 2.5.3 of psycopg2**.  Since psycopg2 is for PostgreSQL, you'll obviousely want to have that installed first.
 
 #### Windows 32 bit
 ###### Python 2.5
@@ -56,6 +56,13 @@ pip install git+https://github.com/nwcell/psycopg2-windows.git@win64-py32#egg=ps
 ```
 pip install git+https://github.com/nwcell/psycopg2-windows.git@win64-py33#egg=psycopg2
 ```
+
+Versions
+--------
+If you want to specify your version, you may do so by installing by tag instead of branch.  The naming convention is identical to branches, except you append the psycopg2 version (eg. @win32-py25-psycopg2-253).  The following psycopg2 versions are available:
+
+ - **2.5.2**
+ - **2.5.3**
 
 Tests
 ----
