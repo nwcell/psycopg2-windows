@@ -117,7 +117,7 @@ class Range(object):
 
         return True
 
-    def __nonzero__(self):
+    def __bool__(self):
         return self._bounds is not None
 
     def __eq__(self, other):
@@ -133,12 +133,43 @@ class Range(object):
     def __hash__(self):
         return hash((self._lower, self._upper, self._bounds))
 
-    def __lt__(self, other):
-        raise TypeError(
-            'Range objects cannot be ordered; please refer to the PostgreSQL'
-            ' documentation to perform this operation in the database')
+    # as the postgres docs describe for the server-side stuff,
+    # ordering is rather arbitrary, but will remain stable
+    # and consistent.
 
-    __le__ = __gt__ = __ge__ = __lt__
+    def __lt__(self, other):
+        if not isinstance(other, Range):
+            return NotImplemented
+        for attr in ('_lower', '_upper', '_bounds'):
+            self_value = getattr(self, attr)
+            other_value = getattr(other, attr)
+            if self_value == other_value:
+                pass
+            elif self_value is None:
+                return True
+            elif other_value is None:
+                return False
+            else:
+                return self_value < other_value
+        return False
+
+    def __le__(self, other):
+        if self == other:
+            return True
+        else:
+            return self.__lt__(other)
+
+    def __gt__(self, other):
+        if isinstance(other, Range):
+            return other.__lt__(self)
+        else:
+            return NotImplemented
+
+    def __ge__(self, other):
+        if self == other:
+            return True
+        else:
+            return self.__gt__(other)
 
 
 def register_range(pgrange, pyrange, conn_or_curs, globally=False):
@@ -206,7 +237,7 @@ class RangeAdapter(object):
                 a.prepare(self._conn)
             lower = a.getquoted()
         else:
-            lower = b('NULL')
+            lower = b'NULL'
 
         if r.upper is not None:
             a = adapt(r.upper)
@@ -214,9 +245,9 @@ class RangeAdapter(object):
                 a.prepare(self._conn)
             upper = a.getquoted()
         else:
-            upper = b('NULL')
+            upper = b'NULL'
 
-        return b(self.name + '(') + lower + b(', ') + upper \
+        return b(self.name + '(') + lower + b', ' + upper \
                 + b(", '%s')" % r._bounds)
 
 
@@ -248,7 +279,7 @@ class RangeCaster(object):
         # an implementation detail and is not documented. It is currently used
         # for the numeric ranges.
         self.adapter = None
-        if isinstance(pgrange, basestring):
+        if isinstance(pgrange, str):
             self.adapter = type(pgrange, (RangeAdapter,), {})
             self.adapter.name = pgrange
         else:
@@ -264,7 +295,7 @@ class RangeCaster(object):
 
         self.range = None
         try:
-            if isinstance(pyrange, basestring):
+            if isinstance(pyrange, str):
                 self.range = type(pyrange, (Range,), {})
             if issubclass(pyrange, Range) and pyrange is not Range:
                 self.range = pyrange
@@ -356,7 +387,7 @@ where typname = %s and ns.nspname = %s;
 
         m = self._re_range.match(s)
         if m is None:
-            raise InterfaceError("failed to parse range: %s")
+            raise InterfaceError("failed to parse range: '%s'" % s)
 
         lower = m.group(3)
         if lower is None:
@@ -417,7 +448,7 @@ class NumberRangeAdapter(RangeAdapter):
     def getquoted(self):
         r = self.adapted
         if r.isempty:
-            return b("'empty'")
+            return b"'empty'"
 
         if not r.lower_inf:
             # not exactly: we are relying that none of these object is really

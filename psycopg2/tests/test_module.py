@@ -22,8 +22,8 @@
 # FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public
 # License for more details.
 
-from testutils import unittest, skip_before_python, skip_before_postgres
-from testutils import ConnectingTestCase, skip_copy_if_green
+from .testutils import unittest, skip_before_python, skip_before_postgres
+from .testutils import ConnectingTestCase, skip_copy_if_green
 
 import psycopg2
 
@@ -72,10 +72,10 @@ class ConnectTestCase(unittest.TestCase):
 
         psycopg2.connect(database='foo',
             user='postgres', password='secret', port=5432)
-        self.assert_('dbname=foo' in self.args[0])
-        self.assert_('user=postgres' in self.args[0])
-        self.assert_('password=secret' in self.args[0])
-        self.assert_('port=5432' in self.args[0])
+        self.assertTrue('dbname=foo' in self.args[0])
+        self.assertTrue('user=postgres' in self.args[0])
+        self.assertTrue('password=secret' in self.args[0])
+        self.assertTrue('port=5432' in self.args[0])
         self.assertEqual(len(self.args[0].split()), 4)
 
     def test_generic_keywords(self):
@@ -100,12 +100,12 @@ class ConnectTestCase(unittest.TestCase):
         psycopg2.connect(database='foo', bar='baz', async=1)
         self.assertEqual(self.args[0], 'dbname=foo bar=baz')
         self.assertEqual(self.args[1], None)
-        self.assert_(self.args[2])
+        self.assertTrue(self.args[2])
 
         psycopg2.connect("dbname=foo bar=baz", async=True)
         self.assertEqual(self.args[0], 'dbname=foo bar=baz')
         self.assertEqual(self.args[1], None)
-        self.assert_(self.args[2])
+        self.assertTrue(self.args[2])
 
     def test_empty_param(self):
         psycopg2.connect(database='sony', password='')
@@ -141,22 +141,22 @@ class ExceptionsTestCase(ConnectingTestCase):
         cur = self.conn.cursor()
         try:
             cur.execute("select * from nonexist")
-        except psycopg2.Error, exc:
+        except psycopg2.Error as exc:
             e = exc
 
         self.assertEqual(e.pgcode, '42P01')
-        self.assert_(e.pgerror)
-        self.assert_(e.cursor is cur)
+        self.assertTrue(e.pgerror)
+        self.assertTrue(e.cursor is cur)
 
     def test_diagnostics_attributes(self):
         cur = self.conn.cursor()
         try:
             cur.execute("select * from nonexist")
-        except psycopg2.Error, exc:
+        except psycopg2.Error as exc:
             e = exc
 
         diag = e.diag
-        self.assert_(isinstance(diag, psycopg2.extensions.Diagnostics))
+        self.assertTrue(isinstance(diag, psycopg2.extensions.Diagnostics))
         for attr in [
                 'column_name', 'constraint_name', 'context', 'datatype_name',
                 'internal_position', 'internal_query', 'message_detail',
@@ -165,13 +165,13 @@ class ExceptionsTestCase(ConnectingTestCase):
                 'statement_position', 'table_name', ]:
             v = getattr(diag, attr)
             if v is not None:
-                self.assert_(isinstance(v, str))
+                self.assertTrue(isinstance(v, str))
 
     def test_diagnostics_values(self):
         cur = self.conn.cursor()
         try:
             cur.execute("select * from nonexist")
-        except psycopg2.Error, exc:
+        except psycopg2.Error as exc:
             e = exc
 
         self.assertEqual(e.diag.sqlstate, '42P01')
@@ -185,7 +185,7 @@ class ExceptionsTestCase(ConnectingTestCase):
             cur = self.conn.cursor()
             try:
                 cur.execute("select * from nonexist")
-            except psycopg2.Error, exc:
+            except psycopg2.Error as exc:
                 return cur, exc
 
         cur, e = tmp()
@@ -204,12 +204,12 @@ class ExceptionsTestCase(ConnectingTestCase):
 
     @skip_copy_if_green
     def test_diagnostics_copy(self):
-        from StringIO import StringIO
+        from io import StringIO
         f = StringIO()
         cur = self.conn.cursor()
         try:
             cur.copy_to(f, 'nonexist')
-        except psycopg2.Error, exc:
+        except psycopg2.Error as exc:
             diag = exc.diag
 
         self.assertEqual(diag.sqlstate, '42P01')
@@ -218,14 +218,14 @@ class ExceptionsTestCase(ConnectingTestCase):
         cur = self.conn.cursor()
         try:
             cur.execute("l'acqua e' poca e 'a papera nun galleggia")
-        except Exception, exc:
+        except Exception as exc:
             diag1 = exc.diag
 
         self.conn.rollback()
 
         try:
             cur.execute("select level from water where ducks > 1")
-        except psycopg2.Error, exc:
+        except psycopg2.Error as exc:
             diag2 = exc.diag
 
         self.assertEqual(diag1.sqlstate, '42601')
@@ -242,7 +242,7 @@ class ExceptionsTestCase(ConnectingTestCase):
         cur.execute("insert into test_deferred values (1,2)")
         try:
             self.conn.commit()
-        except psycopg2.Error, exc:
+        except psycopg2.Error as exc:
             e = exc
         self.assertEqual(e.diag.sqlstate, '23503')
 
@@ -255,7 +255,7 @@ class ExceptionsTestCase(ConnectingTestCase):
             )""")
         try:
             cur.execute("insert into test_exc values(2)")
-        except psycopg2.Error, exc:
+        except psycopg2.Error as exc:
             e = exc
         self.assertEqual(e.pgcode, '23514')
         self.assertEqual(e.diag.schema_name[:7], "pg_temp")
@@ -270,14 +270,14 @@ class ExceptionsTestCase(ConnectingTestCase):
         cur = self.conn.cursor()
         try:
             cur.execute("select * from nonexist")
-        except psycopg2.Error, exc:
+        except psycopg2.Error as exc:
             e = exc
 
         e1 = pickle.loads(pickle.dumps(e))
 
         self.assertEqual(e.pgerror, e1.pgerror)
         self.assertEqual(e.pgcode, e1.pgcode)
-        self.assert_(e1.cursor is None)
+        self.assertTrue(e1.cursor is None)
 
     @skip_before_python(2, 5)
     def test_pickle_connection_error(self):
@@ -285,14 +285,14 @@ class ExceptionsTestCase(ConnectingTestCase):
         import pickle
         try:
             psycopg2.connect('dbname=nosuchdatabasemate')
-        except psycopg2.Error, exc:
+        except psycopg2.Error as exc:
             e = exc
 
         e1 = pickle.loads(pickle.dumps(e))
 
         self.assertEqual(e.pgerror, e1.pgerror)
         self.assertEqual(e.pgcode, e1.pgcode)
-        self.assert_(e1.cursor is None)
+        self.assertTrue(e1.cursor is None)
 
 
 def test_suite():

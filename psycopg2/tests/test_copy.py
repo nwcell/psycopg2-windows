@@ -24,14 +24,14 @@
 
 import sys
 import string
-from testutils import unittest, ConnectingTestCase, decorate_all_tests
-from testutils import skip_if_no_iobase
-from cStringIO import StringIO
-from itertools import cycle, izip
+from .testutils import unittest, ConnectingTestCase, decorate_all_tests
+from .testutils import skip_if_no_iobase, skip_before_postgres
+from io import StringIO
+from itertools import cycle
 
 import psycopg2
 import psycopg2.extensions
-from testutils import skip_copy_if_green
+from .testutils import skip_copy_if_green
 
 if sys.version_info[0] < 3:
     _base = object
@@ -91,7 +91,7 @@ class CopyTests(ConnectingTestCase):
     def test_copy_from_cols(self):
         curs = self.conn.cursor()
         f = StringIO()
-        for i in xrange(10):
+        for i in range(10):
             f.write("%s\n" % (i,))
 
         f.seek(0)
@@ -103,7 +103,7 @@ class CopyTests(ConnectingTestCase):
     def test_copy_from_cols_err(self):
         curs = self.conn.cursor()
         f = StringIO()
-        for i in xrange(10):
+        for i in range(10):
             f.write("%s\n" % (i,))
 
         f.seek(0)
@@ -128,11 +128,11 @@ class CopyTests(ConnectingTestCase):
         self._create_temp_table()  # the above call closed the xn
 
         if sys.version_info[0] < 3:
-            abin = ''.join(map(chr, range(32, 127) + range(160, 256)))
+            abin = ''.join(map(chr, list(range(32, 127)) + list(range(160, 256))))
             about = abin.decode('latin1').replace('\\', '\\\\')
 
         else:
-            abin = bytes(range(32, 127) + range(160, 256)).decode('latin1')
+            abin = bytes(list(range(32, 127)) + list(range(160, 256))).decode('latin1')
             about = abin.replace('\\', '\\\\')
 
         curs = self.conn.cursor()
@@ -151,10 +151,10 @@ class CopyTests(ConnectingTestCase):
         self._create_temp_table()  # the above call closed the xn
 
         if sys.version_info[0] < 3:
-            abin = ''.join(map(chr, range(32, 127) + range(160, 255)))
+            abin = ''.join(map(chr, list(range(32, 127)) + list(range(160, 255))))
             about = abin.replace('\\', '\\\\')
         else:
-            abin = bytes(range(32, 127) + range(160, 255)).decode('latin1')
+            abin = bytes(list(range(32, 127)) + list(range(160, 255))).decode('latin1')
             about = abin.replace('\\', '\\\\').encode('latin1')
 
         curs = self.conn.cursor()
@@ -173,12 +173,12 @@ class CopyTests(ConnectingTestCase):
         self._create_temp_table()  # the above call closed the xn
 
         if sys.version_info[0] < 3:
-            abin = ''.join(map(chr, range(32, 127) + range(160, 256)))
+            abin = ''.join(map(chr, list(range(32, 127)) + list(range(160, 256))))
             abin = abin.decode('latin1')
             about = abin.replace('\\', '\\\\')
 
         else:
-            abin = bytes(range(32, 127) + range(160, 256)).decode('latin1')
+            abin = bytes(list(range(32, 127)) + list(range(160, 256))).decode('latin1')
             about = abin.replace('\\', '\\\\')
 
         import io
@@ -216,7 +216,7 @@ class CopyTests(ConnectingTestCase):
 
     def _copy_from(self, curs, nrecs, srec, copykw):
         f = StringIO()
-        for i, c in izip(xrange(nrecs), cycle(string.ascii_letters)):
+        for i, c in zip(range(nrecs), cycle(string.ascii_letters)):
             l = c * srec
             f.write("%s\t%s\n" % (i,l))
 
@@ -271,6 +271,35 @@ class CopyTests(ConnectingTestCase):
         curs.copy_from(f, "manycols", columns = cols)
         curs.execute("select count(*) from manycols;")
         self.assertEqual(curs.fetchone()[0], 2)
+
+    @skip_before_postgres(8, 2) # they don't send the count
+    def test_copy_rowcount(self):
+        curs = self.conn.cursor()
+
+        curs.copy_from(StringIO('aaa\nbbb\nccc\n'), 'tcopy', columns=['data'])
+        self.assertEqual(curs.rowcount, 3)
+
+        curs.copy_expert(
+            "copy tcopy (data) from stdin",
+            StringIO('ddd\neee\n'))
+        self.assertEqual(curs.rowcount, 2)
+
+        curs.copy_to(StringIO(), "tcopy")
+        self.assertEqual(curs.rowcount, 5)
+
+        curs.execute("insert into tcopy (data) values ('fff')")
+        curs.copy_expert("copy tcopy to stdout", StringIO())
+        self.assertEqual(curs.rowcount, 6)
+
+    def test_copy_rowcount_error(self):
+        curs = self.conn.cursor()
+
+        curs.execute("insert into tcopy (data) values ('fff')")
+        self.assertEqual(curs.rowcount, 1)
+
+        self.assertRaises(psycopg2.DataError,
+            curs.copy_from, StringIO('aaa\nbbb\nccc\n'), 'tcopy')
+        self.assertEqual(curs.rowcount, -1)
 
 
 decorate_all_tests(CopyTests, skip_copy_if_green)

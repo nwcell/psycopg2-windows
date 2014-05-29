@@ -31,10 +31,10 @@ import psycopg2
 import psycopg2.errorcodes
 import psycopg2.extensions
 
-from testutils import unittest, decorate_all_tests, skip_if_no_superuser
-from testutils import skip_before_postgres, skip_after_postgres
-from testutils import ConnectingTestCase, skip_if_tpc_disabled
-from testconfig import dsn, dbname
+from .testutils import unittest, decorate_all_tests, skip_if_no_superuser
+from .testutils import skip_before_postgres, skip_after_postgres
+from .testutils import ConnectingTestCase, skip_if_tpc_disabled
+from .testconfig import dsn, dbname
 
 
 class ConnectionTests(ConnectingTestCase):
@@ -48,7 +48,7 @@ class ConnectionTests(ConnectingTestCase):
         conn = self.conn
         conn.close()
         conn.close()
-        self.assert_(conn.closed)
+        self.assertTrue(conn.closed)
 
     def test_cursor_closed_attribute(self):
         conn = self.conn
@@ -70,10 +70,10 @@ class ConnectionTests(ConnectingTestCase):
         cur = conn.cursor()
         try:
             cur.execute("select pg_terminate_backend(pg_backend_pid())")
-        except psycopg2.OperationalError, e:
+        except psycopg2.OperationalError as e:
             if e.pgcode != psycopg2.errorcodes.ADMIN_SHUTDOWN:
                 raise
-        except psycopg2.DatabaseError, e:
+        except psycopg2.DatabaseError as e:
             # curiously when disconnected in green mode we get a DatabaseError
             # without pgcode.
             if e.pgcode is not None:
@@ -100,7 +100,7 @@ class ConnectionTests(ConnectingTestCase):
             cur.execute("set client_min_messages=debug1")
         cur.execute("create temp table chatty (id serial primary key);")
         self.assertEqual("CREATE TABLE", cur.statusmessage)
-        self.assert_(conn.notices)
+        self.assertTrue(conn.notices)
 
     def test_notices_consistent_order(self):
         conn = self.conn
@@ -110,10 +110,10 @@ class ConnectionTests(ConnectingTestCase):
         cur.execute("create temp table table1 (id serial); create temp table table2 (id serial);")
         cur.execute("create temp table table3 (id serial); create temp table table4 (id serial);")
         self.assertEqual(4, len(conn.notices))
-        self.assert_('table1' in conn.notices[0])
-        self.assert_('table2' in conn.notices[1])
-        self.assert_('table3' in conn.notices[2])
-        self.assert_('table4' in conn.notices[3])
+        self.assertTrue('table1' in conn.notices[0])
+        self.assertTrue('table2' in conn.notices[1])
+        self.assertTrue('table3' in conn.notices[2])
+        self.assertTrue('table4' in conn.notices[3])
 
     def test_notices_limited(self):
         conn = self.conn
@@ -125,16 +125,16 @@ class ConnectionTests(ConnectingTestCase):
             cur.execute(sql)
 
         self.assertEqual(50, len(conn.notices))
-        self.assert_('table50' in conn.notices[0], conn.notices[0])
-        self.assert_('table51' in conn.notices[1], conn.notices[1])
-        self.assert_('table98' in conn.notices[-2], conn.notices[-2])
-        self.assert_('table99' in conn.notices[-1], conn.notices[-1])
+        self.assertTrue('table50' in conn.notices[0], conn.notices[0])
+        self.assertTrue('table51' in conn.notices[1], conn.notices[1])
+        self.assertTrue('table98' in conn.notices[-2], conn.notices[-2])
+        self.assertTrue('table99' in conn.notices[-1], conn.notices[-1])
 
     def test_server_version(self):
-        self.assert_(self.conn.server_version)
+        self.assertTrue(self.conn.server_version)
 
     def test_protocol_version(self):
-        self.assert_(self.conn.protocol_version in (2,3),
+        self.assertTrue(self.conn.protocol_version in (2,3),
             self.conn.protocol_version)
 
     def test_tpc_unsupported(self):
@@ -161,7 +161,7 @@ class ConnectionTests(ConnectingTestCase):
         t2.start()
         t1.join()
         t2.join()
-        self.assert_(time.time() - t0 < 7,
+        self.assertTrue(time.time() - t0 < 7,
             "something broken in concurrency")
 
     def test_encoding_name(self):
@@ -170,7 +170,7 @@ class ConnectionTests(ConnectingTestCase):
         cur = self.conn.cursor()
         psycopg2.extensions.register_type(psycopg2.extensions.UNICODE, cur)
         cur.execute("select 'foo'::text;")
-        self.assertEqual(cur.fetchone()[0], u'foo')
+        self.assertEqual(cur.fetchone()[0], 'foo')
 
     def test_connect_nonnormal_envvar(self):
         # We must perform encoding normalization at connection time
@@ -193,7 +193,7 @@ class ConnectionTests(ConnectingTestCase):
         conn.close()
         del conn
         gc.collect()
-        self.assert_(w() is None)
+        self.assertTrue(w() is None)
 
     def test_commit_concurrency(self):
         # The problem is the one reported in ticket #103. Because of bad
@@ -222,7 +222,7 @@ class ConnectionTests(ConnectingTestCase):
         # Stop the committer thread
         stop.append(True)
 
-        self.assert_(not notices, "%d notices raised" % len(notices))
+        self.assertTrue(not notices, "%d notices raised" % len(notices))
 
     def test_connect_cursor_factory(self):
         import psycopg2.extras
@@ -249,6 +249,28 @@ class ConnectionTests(ConnectingTestCase):
         cur.execute("select 1 as a")
         self.assertRaises(TypeError, (lambda r: r['a']), cur.fetchone())
 
+    def test_cursor_factory_none(self):
+        # issue #210
+        conn = self.connect()
+        cur = conn.cursor(cursor_factory=None)
+        self.assertEqual(type(cur), psycopg2.extensions.cursor)
+
+        conn = self.connect(cursor_factory=psycopg2.extras.DictCursor)
+        cur = conn.cursor(cursor_factory=None)
+        self.assertEqual(type(cur), psycopg2.extras.DictCursor)
+
+    def test_failed_init_status(self):
+        class SubConnection(psycopg2.extensions.connection):
+            def __init__(self, dsn):
+                try:
+                    super(SubConnection, self).__init__(dsn)
+                except Exception:
+                    pass
+
+        c = SubConnection("dbname=thereisnosuchdatabasemate password=foobar")
+        self.assertTrue(c.closed, "connection failed so it must be closed")
+        self.assertTrue('foobar' not in c.dsn, "password was not obscured")
+
 
 class IsolationLevelsTestCase(ConnectingTestCase):
 
@@ -273,7 +295,7 @@ class IsolationLevelsTestCase(ConnectingTestCase):
 
     def test_encoding(self):
         conn = self.connect()
-        self.assert_(conn.encoding in psycopg2.extensions.encodings)
+        self.assertTrue(conn.encoding in psycopg2.extensions.encodings)
 
     def test_set_isolation_level(self):
         conn = self.connect()
@@ -757,7 +779,7 @@ class ConnectionTwoPhaseTests(ConnectingTestCase):
 
     def test_xid_unicode(self):
         cnn = self.connect()
-        x1 = cnn.xid(10, u'uni', u'code')
+        x1 = cnn.xid(10, 'uni', 'code')
         cnn.tpc_begin(x1)
         cnn.tpc_prepare()
         cnn.reset()
@@ -773,7 +795,7 @@ class ConnectionTwoPhaseTests(ConnectingTestCase):
         # Let's just check uniconde is accepted as type.
         cnn = self.connect()
         cnn.set_client_encoding('utf8')
-        cnn.tpc_begin(u"transaction-id")
+        cnn.tpc_begin("transaction-id")
         cnn.tpc_prepare()
         cnn.reset()
 
@@ -958,12 +980,12 @@ class AutocommitTests(ConnectingTestCase):
         # to make it consistent with other methods; meanwhile let's just check
         # it doesn't explode.
         try:
-            self.assert_(self.conn.autocommit in (True, False))
+            self.assertTrue(self.conn.autocommit in (True, False))
         except psycopg2.InterfaceError:
             pass
 
     def test_default_no_autocommit(self):
-        self.assert_(not self.conn.autocommit)
+        self.assertTrue(not self.conn.autocommit)
         self.assertEqual(self.conn.status, psycopg2.extensions.STATUS_READY)
         self.assertEqual(self.conn.get_transaction_status(),
             psycopg2.extensions.TRANSACTION_STATUS_IDLE)
@@ -981,7 +1003,7 @@ class AutocommitTests(ConnectingTestCase):
 
     def test_set_autocommit(self):
         self.conn.autocommit = True
-        self.assert_(self.conn.autocommit)
+        self.assertTrue(self.conn.autocommit)
         self.assertEqual(self.conn.status, psycopg2.extensions.STATUS_READY)
         self.assertEqual(self.conn.get_transaction_status(),
             psycopg2.extensions.TRANSACTION_STATUS_IDLE)
@@ -993,7 +1015,7 @@ class AutocommitTests(ConnectingTestCase):
             psycopg2.extensions.TRANSACTION_STATUS_IDLE)
 
         self.conn.autocommit = False
-        self.assert_(not self.conn.autocommit)
+        self.assertTrue(not self.conn.autocommit)
         self.assertEqual(self.conn.status, psycopg2.extensions.STATUS_READY)
         self.assertEqual(self.conn.get_transaction_status(),
             psycopg2.extensions.TRANSACTION_STATUS_IDLE)
@@ -1011,7 +1033,7 @@ class AutocommitTests(ConnectingTestCase):
 
     def test_set_session_autocommit(self):
         self.conn.set_session(autocommit=True)
-        self.assert_(self.conn.autocommit)
+        self.assertTrue(self.conn.autocommit)
         self.assertEqual(self.conn.status, psycopg2.extensions.STATUS_READY)
         self.assertEqual(self.conn.get_transaction_status(),
             psycopg2.extensions.TRANSACTION_STATUS_IDLE)
@@ -1023,7 +1045,7 @@ class AutocommitTests(ConnectingTestCase):
             psycopg2.extensions.TRANSACTION_STATUS_IDLE)
 
         self.conn.set_session(autocommit=False)
-        self.assert_(not self.conn.autocommit)
+        self.assertTrue(not self.conn.autocommit)
         self.assertEqual(self.conn.status, psycopg2.extensions.STATUS_READY)
         self.assertEqual(self.conn.get_transaction_status(),
             psycopg2.extensions.TRANSACTION_STATUS_IDLE)
@@ -1035,7 +1057,7 @@ class AutocommitTests(ConnectingTestCase):
         self.conn.rollback()
 
         self.conn.set_session('serializable', readonly=True, autocommit=True)
-        self.assert_(self.conn.autocommit)
+        self.assertTrue(self.conn.autocommit)
         cur.execute('select 1;')
         self.assertEqual(self.conn.status, psycopg2.extensions.STATUS_READY)
         self.assertEqual(self.conn.get_transaction_status(),
