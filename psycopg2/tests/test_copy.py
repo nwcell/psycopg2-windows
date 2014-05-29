@@ -25,7 +25,7 @@
 import sys
 import string
 from testutils import unittest, ConnectingTestCase, decorate_all_tests
-from testutils import skip_if_no_iobase
+from testutils import skip_if_no_iobase, skip_before_postgres
 from cStringIO import StringIO
 from itertools import cycle, izip
 
@@ -271,6 +271,35 @@ class CopyTests(ConnectingTestCase):
         curs.copy_from(f, "manycols", columns = cols)
         curs.execute("select count(*) from manycols;")
         self.assertEqual(curs.fetchone()[0], 2)
+
+    @skip_before_postgres(8, 2) # they don't send the count
+    def test_copy_rowcount(self):
+        curs = self.conn.cursor()
+
+        curs.copy_from(StringIO('aaa\nbbb\nccc\n'), 'tcopy', columns=['data'])
+        self.assertEqual(curs.rowcount, 3)
+
+        curs.copy_expert(
+            "copy tcopy (data) from stdin",
+            StringIO('ddd\neee\n'))
+        self.assertEqual(curs.rowcount, 2)
+
+        curs.copy_to(StringIO(), "tcopy")
+        self.assertEqual(curs.rowcount, 5)
+
+        curs.execute("insert into tcopy (data) values ('fff')")
+        curs.copy_expert("copy tcopy to stdout", StringIO())
+        self.assertEqual(curs.rowcount, 6)
+
+    def test_copy_rowcount_error(self):
+        curs = self.conn.cursor()
+
+        curs.execute("insert into tcopy (data) values ('fff')")
+        self.assertEqual(curs.rowcount, 1)
+
+        self.assertRaises(psycopg2.DataError,
+            curs.copy_from, StringIO('aaa\nbbb\nccc\n'), 'tcopy')
+        self.assertEqual(curs.rowcount, -1)
 
 
 decorate_all_tests(CopyTests, skip_copy_if_green)
