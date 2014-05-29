@@ -58,7 +58,7 @@ class QuotingTestCase(ConnectingTestCase):
         res = curs.fetchone()[0]
 
         self.assertEqual(res, data)
-        self.assert_(not self.conn.notices)
+        self.assertTrue(not self.conn.notices)
 
     def test_binary(self):
         data = b"""some data with \000\013 binary
@@ -81,7 +81,7 @@ class QuotingTestCase(ConnectingTestCase):
                 "bytea broken with server >= 9.0, libpq < 9")
 
         self.assertEqual(res, data)
-        self.assert_(not self.conn.notices)
+        self.assertTrue(not self.conn.notices)
 
     def test_unicode(self):
         curs = self.conn.cursor()
@@ -104,7 +104,7 @@ class QuotingTestCase(ConnectingTestCase):
         res = curs.fetchone()[0]
 
         self.assertEqual(res, data)
-        self.assert_(not self.conn.notices)
+        self.assertTrue(not self.conn.notices)
 
     def test_latin1(self):
         self.conn.set_client_encoding('LATIN1')
@@ -118,7 +118,7 @@ class QuotingTestCase(ConnectingTestCase):
         curs.execute("SELECT %s::text;", (data,))
         res = curs.fetchone()[0]
         self.assertEqual(res, data)
-        self.assert_(not self.conn.notices)
+        self.assertTrue(not self.conn.notices)
 
         # as unicode
         if sys.version_info[0] < 3:
@@ -128,7 +128,7 @@ class QuotingTestCase(ConnectingTestCase):
             curs.execute("SELECT %s::text;", (data,))
             res = curs.fetchone()[0]
             self.assertEqual(res, data)
-            self.assert_(not self.conn.notices)
+            self.assertTrue(not self.conn.notices)
 
     def test_koi8(self):
         self.conn.set_client_encoding('KOI8')
@@ -142,7 +142,7 @@ class QuotingTestCase(ConnectingTestCase):
         curs.execute("SELECT %s::text;", (data,))
         res = curs.fetchone()[0]
         self.assertEqual(res, data)
-        self.assert_(not self.conn.notices)
+        self.assertTrue(not self.conn.notices)
 
         # as unicode
         if sys.version_info[0] < 3:
@@ -152,7 +152,7 @@ class QuotingTestCase(ConnectingTestCase):
             curs.execute("SELECT %s::text;", (data,))
             res = curs.fetchone()[0]
             self.assertEqual(res, data)
-            self.assert_(not self.conn.notices)
+            self.assertTrue(not self.conn.notices)
 
 
 class TestQuotedString(ConnectingTestCase):
