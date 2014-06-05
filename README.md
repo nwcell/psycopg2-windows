@@ -39,6 +39,10 @@ pip install git+https://github.com/nwcell/psycopg2-windows.git@win32-py32#egg=ps
 ```
 pip install git+https://github.com/nwcell/psycopg2-windows.git@win32-py33#egg=psycopg2
 ```
+###### Python 3.4
+```
+pip install git+https://github.com/nwcell/psycopg2-windows.git@win32-py34#egg=psycopg2
+```
 #### Windows 64 bit
 ###### Python 2.6
 ```
@@ -55,6 +59,10 @@ pip install git+https://github.com/nwcell/psycopg2-windows.git@win64-py32#egg=ps
 ###### Python 3.3
 ```
 pip install git+https://github.com/nwcell/psycopg2-windows.git@win64-py33#egg=psycopg2
+```
+###### Python 3.4
+```
+pip install git+https://github.com/nwcell/psycopg2-windows.git@win64-py34#egg=psycopg2
 ```
 
 Versions
